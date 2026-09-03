@@ -1,0 +1,32 @@
+name: fundx_trading_app
+description: "A new Flutter project."
+publish_to: 'none' 
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  get: ^4.6.6                  # state mgmt, routing, DI
+  fl_chart: ^0.69.0            # candlestick/line chart for Trade screen
+  google_fonts: ^6.2.1         # matches the clean sans-serif in the mockup
+  intl: ^0.19.0                # currency/number formatting ($100,000.00)
+  flutter_svg: ^2.0.10+1       # icons if you use SVG
+  percent_indicator: ^4.2.3    # challenge progress bars
+  shared_preferences: ^2.3.2 
+  cupertino_icons: ^1.0.8
+  http: ^1.6.0
+  flutter_secure_storage: 9.2.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
