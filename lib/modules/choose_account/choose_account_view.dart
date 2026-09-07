@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../app/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/widgets/app_bottom_nav.dart';
 import '../../data/models/account_model.dart';
 import 'choose_account_controller.dart';
 
@@ -16,18 +17,32 @@ class ChooseAccountView extends GetView<ChooseAccountController> {
         leading: const BackButton(color: Colors.white),
         title: const Text('Choose Funded Account', style: TextStyle(color: Colors.white, fontSize: 17)),
       ),
+      // No entry in AppBottomNav's own route list highlights this screen,
+      // so currentIndex: -1 just leaves all icons unselected. This is here
+      // so a brand-new user (who lands here with an empty nav stack) can
+      // still reach Wallet to add funds before buying a challenge.
+      bottomNavigationBar: const AppBottomNav(currentIndex: -1),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          itemCount: controller.plans.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 14),
-          itemBuilder: (context, i) {
-            final plan = controller.plans[i];
-            return _PlanCard(plan: plan, onTap: () => controller.selectPlan(plan));
-          },
+        return Stack(
+          children: [
+            ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              itemCount: controller.plans.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 14),
+              itemBuilder: (context, i) {
+                final plan = controller.plans[i];
+                return _PlanCard(plan: plan, onTap: () => controller.selectPlan(plan));
+              },
+            ),
+            if (controller.isCreatingAccount.value)
+              Container(
+                color: Colors.black.withOpacity(0.4),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+          ],
         );
       }),
     );
@@ -84,9 +99,9 @@ class _PlanCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _MiniStat(label: 'Profit Target', value: Formatters.currency(plan.profitTarget)),
-                _MiniStat(label: 'Daily Loss', value: Formatters.currency(plan.dailyLoss)),
-                _MiniStat(label: 'Max Drawdown', value: Formatters.currency(plan.maxDrawdown)),
+                _MiniStat(label: 'Profit Target', value: Formatters.percent(plan.profitTarget, signed: false)),
+                _MiniStat(label: 'Daily Loss', value: Formatters.percent(plan.dailyLoss, signed: false)),
+                _MiniStat(label: 'Max Drawdown', value: Formatters.percent(plan.maxDrawdown, signed: false)),
               ],
             ),
           ],

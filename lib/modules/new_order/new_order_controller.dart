@@ -54,6 +54,11 @@ class NewOrderController extends GetxController {
         'Order Placed',
         '${side.value.name.toUpperCase()} order for $symbol submitted',
       );
+    } catch (e) {
+      Get.snackbar(
+        'Order Failed',
+        e.toString().replaceFirst('Exception: ', ''),
+      );
     } finally {
       isPlacingOrder.value = false;
     }

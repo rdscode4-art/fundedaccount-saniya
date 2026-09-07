@@ -133,7 +133,10 @@ class TradeChartView extends GetView<TradeChartController> {
                             separatorBuilder: (_, __) => const Divider(height: 16),
                             itemBuilder: (context, i) {
                               final p = controller.positions[i];
-                              return _PositionTile(position: p);
+                              return _PositionTile(
+                                position: p,
+                                onClose: () => controller.closePosition(p.id),
+                              );
                             },
                           ),
                         ),
@@ -162,7 +165,8 @@ class TradeChartView extends GetView<TradeChartController> {
 
 class _PositionTile extends StatelessWidget {
   final PositionModel position;
-  const _PositionTile({required this.position});
+  final VoidCallback? onClose;
+  const _PositionTile({required this.position, this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +196,15 @@ class _PositionTile extends StatelessWidget {
                 color: position.pnl >= 0 ? AppColors.success : AppColors.danger,
                 fontSize: 13,
                 fontWeight: FontWeight.w700)),
+        if (onClose != null)
+          IconButton(
+            onPressed: onClose,
+            icon: const Icon(Icons.close_rounded, color: AppColors.textTertiary, size: 18),
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: 'Close position',
+          ),
       ],
     );
   }

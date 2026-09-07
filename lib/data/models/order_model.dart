@@ -30,4 +30,19 @@ class OrderRequestModel {
     final reward = (takeProfit - entryPrice).abs();
     return reward * lotSize * 1000; // simplified simulation
   }
+
+  /// The backend only accepts the exact strings "Buy" / "Sell".
+  String get sideApiValue => side == OrderSide.buy ? 'Buy' : 'Sell';
+
+  /// Builds the body for `POST /api/trading/orders`.
+  Map<String, dynamic> toJson({required String accountId}) => {
+        'accountId': int.tryParse(accountId) ?? accountId,
+        'symbol': symbol,
+        'side': sideApiValue,
+        'lotSize': lotSize,
+        'riskPercent': riskPercent,
+        'entryPrice': entryPrice,
+        'stopLoss': stopLoss,
+        'takeProfit': takeProfit,
+      };
 }

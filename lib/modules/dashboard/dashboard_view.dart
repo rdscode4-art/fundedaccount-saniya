@@ -200,12 +200,14 @@ class DashboardView extends GetView<DashboardController> {
                       RowStat(
                         label: 'Daily Loss',
                         value:
-                            '${Formatters.currency(account.dailyLossUsed)} / ${Formatters.currency(account.dailyLossLimit)}',
+                            '${Formatters.currency(account.fundedBalance * account.dailyLossUsed / 100)} / '
+                            '${Formatters.currency(account.fundedBalance * account.dailyLossLimit / 100)}',
                       ),
                       RowStat(
                         label: 'Max Drawdown',
                         value:
-                            '${Formatters.currency(account.maxDrawdownUsed)} / ${Formatters.currency(account.maxDrawdown)}',
+                            '${Formatters.currency(account.fundedBalance * account.maxDrawdownUsed / 100)} / '
+                            '${Formatters.currency(account.fundedBalance * account.maxDrawdown / 100)}',
                       ),
                     ],
                   ),

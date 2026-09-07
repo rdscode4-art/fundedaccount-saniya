@@ -34,12 +34,40 @@ class TradeChartController extends GetxController {
 
   Future<void> loadChart() async {
     isLoading.value = true;
-    candles.value = await _tradingRepository.getCandles(symbol: symbol.value, timeframe: timeframe.value);
-    isLoading.value = false;
+    try {
+      candles.value = await _tradingRepository.getCandles(symbol: symbol.value, timeframe: timeframe.value);
+    } catch (e) {
+      Get.snackbar(
+        'Chart',
+        e.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> loadPositions() async {
-    positions.value = await _accountRepository.getOpenPositions();
+    try {
+      positions.value = await _accountRepository.getOpenPositions();
+    } catch (e) {
+      Get.snackbar(
+        'Positions',
+        e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
+  Future<void> closePosition(String positionId) async {
+    try {
+      await _tradingRepository.closePosition(positionId);
+      await loadPositions();
+      Get.snackbar('Position Closed', 'The position was closed successfully.');
+    } catch (e) {
+      Get.snackbar(
+        'Close Failed',
+        e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
   }
 
   void setTimeframe(String tf) {

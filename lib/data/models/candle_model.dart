@@ -14,4 +14,22 @@ class CandleModel {
   });
 
   bool get isBullish => close >= open;
+
+  /// Maps a candle from `GET /api/trading/candles`:
+  /// `{ time: "2024-05-02 10:45:00", open, high, low, close }`
+  factory CandleModel.fromJson(Map<String, dynamic> json) {
+    double num_(dynamic v) {
+      if (v == null) return 0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0;
+    }
+
+    return CandleModel(
+      time: DateTime.tryParse(json['time']?.toString() ?? '') ?? DateTime.now(),
+      open: num_(json['open']),
+      high: num_(json['high']),
+      low: num_(json['low']),
+      close: num_(json['close']),
+    );
+  }
 }

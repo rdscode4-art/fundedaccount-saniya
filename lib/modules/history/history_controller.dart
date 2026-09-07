@@ -18,8 +18,16 @@ class HistoryController extends GetxController {
 
   Future<void> load() async {
     isLoading.value = true;
-    history.value = await _tradingRepository.getHistory(filter: selectedFilter.value);
-    isLoading.value = false;
+    try {
+      history.value = await _tradingRepository.getHistory(filter: selectedFilter.value);
+    } catch (e) {
+      Get.snackbar(
+        'History',
+        e.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void selectFilter(String filter) {

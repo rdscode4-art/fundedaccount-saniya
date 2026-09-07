@@ -5,4 +5,5 @@ abstract class AccountRepository {
   Future<AccountModel> getActiveAccount();
   Future<List<FundedPlanModel>> getFundedPlans();
   Future<List<PositionModel>> getOpenPositions();
+  Future<AccountModel> createAccount(String planId);
 }

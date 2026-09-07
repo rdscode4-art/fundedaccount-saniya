@@ -7,6 +7,7 @@ class ChooseAccountController extends GetxController {
   final AccountRepository _accountRepository = Get.find<AccountRepository>();
 
   final isLoading = true.obs;
+  final isCreatingAccount = false.obs;
   final plans = <FundedPlanModel>[].obs;
 
   @override
@@ -21,5 +22,16 @@ class ChooseAccountController extends GetxController {
     isLoading.value = false;
   }
 
-  void selectPlan(FundedPlanModel plan) => Get.toNamed(Routes.accountDetails);
+  Future<void> selectPlan(FundedPlanModel plan) async {
+    if (isCreatingAccount.value) return;
+    isCreatingAccount.value = true;
+    try {
+      await _accountRepository.createAccount(plan.id);
+      Get.toNamed(Routes.accountDetails);
+    } catch (e) {
+      Get.snackbar('Could not create account', e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      isCreatingAccount.value = false;
+    }
+  }
 }

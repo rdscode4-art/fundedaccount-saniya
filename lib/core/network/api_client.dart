@@ -3,7 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
-   static const String baseUrl = 'http://192.168.1.25:5000/api';
+  // Physical Android device on the same Wi-Fi as your PC.
+  // Update this if your PC's IPv4 address changes (run `ipconfig` to check).
+  static const String baseUrl = 'http://192.168.1.25:5000/api';
 
   final _storage = const FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
@@ -30,8 +32,21 @@ class ApiClient {
     return _handle(res);
   }
 
-  Future<Map<String, dynamic>> get(String path, {bool auth = false}) async {
-    final res = await http.get(Uri.parse('$baseUrl$path'), headers: await _headers(auth: auth));
+  Future<Map<String, dynamic>> get(String path, {bool auth = false, Map<String, dynamic>? query}) async {
+    var uri = Uri.parse('$baseUrl$path');
+    if (query != null && query.isNotEmpty) {
+      uri = uri.replace(queryParameters: query.map((k, v) => MapEntry(k, v.toString())));
+    }
+    final res = await http.get(uri, headers: await _headers(auth: auth));
+    return _handle(res);
+  }
+
+  Future<Map<String, dynamic>> patch(String path, Map<String, dynamic> body, {bool auth = false}) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl$path'),
+      headers: await _headers(auth: auth),
+      body: jsonEncode(body),
+    );
     return _handle(res);
   }
 

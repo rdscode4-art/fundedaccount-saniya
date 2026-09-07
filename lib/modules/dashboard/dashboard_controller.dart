@@ -19,12 +19,19 @@ class DashboardController extends GetxController {
 
   Future<void> loadDashboard() async {
     isLoading.value = true;
-    final results = await Future.wait([
-      _accountRepository.getActiveAccount(),
-      _accountRepository.getOpenPositions(),
-    ]);
-    account.value = results[0] as AccountModel;
-    positions.value = results[1] as List<PositionModel>;
+    try {
+      // Fetch the account first (not with Future.wait) — getOpenPositions()
+      // needs the account id that this call resolves/caches, and a brand
+      // new user won't have an account yet at all.
+      account.value = await _accountRepository.getActiveAccount();
+      positions.value = await _accountRepository.getOpenPositions();
+    } catch (e) {
+      // Most likely: no funded account exists yet for this user. Send them
+      // to pick a plan instead of showing a broken dashboard.
+      isLoading.value = false;
+      Get.offAllNamed(Routes.chooseAccount);
+      return;
+    }
     isLoading.value = false;
   }
 

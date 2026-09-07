@@ -3,8 +3,13 @@ import 'package:intl/intl.dart';
 class Formatters {
   Formatters._();
 
-  static final _currency = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  static final _currency =
+      NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+
   static final _plain = NumberFormat('#,##0.00');
+
+  static final _dateTime =
+      DateFormat('dd MMM yyyy, hh:mm a');
 
   static String currency(double value) => _currency.format(value);
 
@@ -18,5 +23,17 @@ class Formatters {
     return '$sign${value.toStringAsFixed(2)}%';
   }
 
-  static String price(double value, {int decimals = 5}) => value.toStringAsFixed(decimals);
+  static String price(double value, {int decimals = 5}) =>
+      value.toStringAsFixed(decimals);
+
+  static String dateTime(String value) {
+    if (value.isEmpty) return '';
+
+    try {
+      final date = DateTime.parse(value).toLocal();
+      return _dateTime.format(date);
+    } catch (_) {
+      return value;
+    }
+  }
 }

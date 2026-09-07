@@ -4,11 +4,81 @@ import '../../app/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 import '../../core/widgets/app_card.dart';
+import '../../data/models/account_model.dart';
 import '../../data/models/transaction_model.dart';
 import 'wallet_controller.dart';
 
 class WalletView extends GetView<WalletController> {
   const WalletView({super.key});
+
+  Future<void> _showAddFundsDialog(BuildContext context) async {
+    final amountController = TextEditingController();
+
+    final result = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        title: const Text(
+          'Add Funds',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        content: TextField(
+          controller: amountController,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+          decoration: InputDecoration(
+            prefixText: '\$ ',
+            prefixStyle: const TextStyle(color: Colors.white70, fontSize: 18),
+            hintText: 'Enter amount',
+            hintStyle: const TextStyle(color: AppColors.textTertiary),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () {
+              final value = double.tryParse(amountController.text.trim());
+              Navigator.of(ctx).pop(value);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+
+    amountController.dispose();
+
+    if (result == null) return; // cancelled, or couldn't parse a number
+
+    if (result <= 0) {
+      Get.snackbar('Invalid amount', 'Enter an amount greater than \$0');
+      return;
+    }
+
+    if (result > 100000) {
+      Get.snackbar('Amount too high', 'Maximum deposit is \$100,000');
+      return;
+    }
+
+    controller.deposit(result);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,13 +187,40 @@ class WalletView extends GetView<WalletController> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.surfaceLight,
                         ),
-                        onPressed: () {},
+                        onPressed: () => _showAddFundsDialog(context),
                         child: const Text('Add Funds'),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
+                const Text(
+                  'Trading Accounts',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (w.fundedAccounts.isEmpty)
+                  AppCard(
+                    child: Text(
+                      'No funded accounts yet. Buy a challenge to get started.',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  )
+                else
+                  ...w.fundedAccounts.map(
+                    (a) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _FundedAccountCard(account: a),
+                    ),
+                  ),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -149,6 +246,82 @@ class WalletView extends GetView<WalletController> {
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _FundedAccountCard extends StatelessWidget {
+  final FundedAccountSummary account;
+  const _FundedAccountCard({required this.account});
+
+  Color get _statusColor {
+    switch (account.status) {
+      case 'Passed':
+        return AppColors.success;
+      case 'Failed':
+        return AppColors.danger;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${Formatters.currency(account.accountSize).replaceAll('.00', '')} Funded Account',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  account.status,
+                  style: TextStyle(
+                    color: _statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              StatItem(
+                label: 'Balance',
+                value: Formatters.currency(account.fundedBalance),
+              ),
+              StatItem(
+                label: 'Equity',
+                value: Formatters.currency(account.equity),
+                alignment: CrossAxisAlignment.center,
+              ),
+              StatItem(
+                label: 'Profit',
+                value: Formatters.signedCurrency(account.profit),
+                valueColor: account.profit >= 0 ? AppColors.success : AppColors.danger,
+                alignment: CrossAxisAlignment.end,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -187,7 +360,7 @@ class _TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isDeposit ? 'Deposit' : 'Payout',
+                  isDeposit ? 'Deposit' : 'Challenge Purchase',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -195,7 +368,7 @@ class _TransactionTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  transaction.date,
+                  Formatters.dateTime(transaction.date),
                   style: const TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 11,
@@ -215,14 +388,30 @@ class _TransactionTile extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const Text(
-                'Success',
-                style: TextStyle(color: AppColors.textTertiary, fontSize: 11),
+              Text(
+                _statusText(transaction.status),
+                style: const TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  String _statusText(TransactionStatus status) {
+    switch (status) {
+      case TransactionStatus.success:
+        return 'Success';
+      case TransactionStatus.pending:
+        return 'Pending';
+      case TransactionStatus.approved:
+        return 'Approved';
+      case TransactionStatus.failed:
+        return 'Failed';
+    }
   }
 }

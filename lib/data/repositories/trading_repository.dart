@@ -5,5 +5,6 @@ import '../models/position_model.dart';
 abstract class TradingRepository {
   Future<List<CandleModel>> getCandles({required String symbol, required String timeframe});
   Future<void> placeOrder(OrderRequestModel order);
+  Future<void> closePosition(String positionId);
   Future<List<PositionModel>> getHistory({String filter = 'All'});
 }

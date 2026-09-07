@@ -112,7 +112,13 @@ class _HistoryTile extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(position.openedAt, style: const TextStyle(color: AppColors.textTertiary, fontSize: 11)),
+            Text(
+              Formatters.dateTime(position.openedAt),
+              style: const TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 11,
+              ),
+            ),
           ],
         ),
       ],
