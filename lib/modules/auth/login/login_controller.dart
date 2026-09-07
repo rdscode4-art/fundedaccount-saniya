@@ -1,23 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../../../data/repositories/auth_repository.dart';
 
 class LoginController extends GetxController {
   final AuthRepository _authRepository = Get.find<AuthRepository>();
 
-  final emailController = TextEditingController(text: 'johntrader@gmail.com');
+  final formKey = GlobalKey<FormState>();
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final obscurePassword = true.obs;
   final isLoading = false.obs;
 
   void togglePasswordVisibility() => obscurePassword.value = !obscurePassword.value;
 
-    Future<void> login() async {
-    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
-      Get.snackbar('Missing details', 'Please enter your email/mobile and password');
-      return;
+  String? validateEmailOrMobile(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Enter your email or mobile number';
+    final isEmailShaped = v.contains('@');
+    if (isEmailShaped && !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) {
+      return 'Enter a valid email address';
     }
+    if (!isEmailShaped && v.replaceAll(RegExp(r'[\s\-]'), '').length < 7) {
+      return 'Enter a valid mobile number';
+    }
+    return null;
+  }
+
+  String? validatePassword(String? value) {
+    if ((value ?? '').isEmpty) return 'Enter your password';
+    return null;
+  }
+
+  Future<void> login() async {
+    if (!(formKey.currentState?.validate() ?? false)) return;
+
     isLoading.value = true;
     try {
       await _authRepository.login(
@@ -26,7 +44,7 @@ class LoginController extends GetxController {
       );
       Get.offAllNamed(Routes.dashboard);
     } catch (e) {
-      Get.snackbar('Login failed', e.toString().replaceAll('Exception: ', ''));
+      AppSnackbar.error('Login failed', e);
     } finally {
       isLoading.value = false;
     }

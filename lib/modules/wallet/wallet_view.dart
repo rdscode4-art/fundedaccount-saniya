@@ -4,6 +4,8 @@ import '../../app/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/state_views.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/transaction_model.dart';
 import 'wallet_controller.dart';
@@ -12,68 +14,27 @@ class WalletView extends GetView<WalletController> {
   const WalletView({super.key});
 
   Future<void> _showAddFundsDialog(BuildContext context) async {
-    final amountController = TextEditingController();
-
+    // The dialog manages its own TextEditingController in _AddFundsDialog's
+    // State — its dispose() only fires once Flutter actually removes the
+    // widget from the tree (i.e. after the closing animation finishes).
+    // Disposing a controller manually right after `showDialog` returns is
+    // too early: the AlertDialog is still animating out and its TextField
+    // is still mounted, which is what caused the
+    // "TextEditingController used after being disposed" crash.
     final result = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        title: const Text(
-          'Add Funds',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
-        content: TextField(
-          controller: amountController,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(color: Colors.white, fontSize: 18),
-          decoration: InputDecoration(
-            prefixText: '\$ ',
-            prefixStyle: const TextStyle(color: Colors.white70, fontSize: 18),
-            hintText: 'Enter amount',
-            hintStyle: const TextStyle(color: AppColors.textTertiary),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.primary),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () {
-              final value = double.tryParse(amountController.text.trim());
-              Navigator.of(ctx).pop(value);
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+      builder: (ctx) => const _AddFundsDialog(),
     );
-
-    amountController.dispose();
 
     if (result == null) return; // cancelled, or couldn't parse a number
 
     if (result <= 0) {
-      Get.snackbar('Invalid amount', 'Enter an amount greater than \$0');
+      AppSnackbar.warning('Invalid amount', 'Enter an amount greater than \$0');
       return;
     }
 
     if (result > 100000) {
-      Get.snackbar('Amount too high', 'Maximum deposit is \$100,000');
+      AppSnackbar.warning('Amount too high', 'Maximum deposit is \$100,000');
       return;
     }
 
@@ -87,7 +48,16 @@ class WalletView extends GetView<WalletController> {
       bottomNavigationBar: const AppBottomNav(currentIndex: 3),
       body: SafeArea(
         child: Obx(() {
-          if (controller.isLoading.value || controller.wallet.value == null) {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.errorMessage.value != null) {
+            return ErrorRetryState(
+              message: controller.errorMessage.value!,
+              onRetry: controller.load,
+            );
+          }
+          if (controller.wallet.value == null) {
             return const Center(child: CircularProgressIndicator());
           }
           final w = controller.wallet.value!;
@@ -183,13 +153,21 @@ class WalletView extends GetView<WalletController> {
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surfaceLight,
-                        ),
-                        onPressed: () => _showAddFundsDialog(context),
-                        child: const Text('Add Funds'),
-                      ),
+                      child: Obx(() => ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.surfaceLight,
+                            ),
+                            onPressed: controller.isSubmittingDeposit.value
+                                ? null
+                                : () => _showAddFundsDialog(context),
+                            child: controller.isSubmittingDeposit.value
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Text('Add Funds'),
+                          )),
                     ),
                   ],
                 ),
@@ -239,9 +217,16 @@ class WalletView extends GetView<WalletController> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ...controller.transactions.map(
-                  (t) => _TransactionTile(transaction: t),
-                ),
+                if (controller.transactions.isEmpty)
+                  const EmptyState(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'No transactions yet',
+                    subtitle: 'Deposits and purchases will appear here.',
+                  )
+                else
+                  ...controller.transactions.map(
+                    (t) => _TransactionTile(transaction: t),
+                  ),
               ],
             ),
           );
@@ -413,5 +398,75 @@ class _TransactionTile extends StatelessWidget {
       case TransactionStatus.failed:
         return 'Failed';
     }
+  }
+}
+
+/// Own StatefulWidget so its TextEditingController is disposed by the
+/// framework at the right point in the dialog's lifecycle (after the close
+/// animation finishes), not manually the instant `Navigator.pop` is called.
+class _AddFundsDialog extends StatefulWidget {
+  const _AddFundsDialog();
+
+  @override
+  State<_AddFundsDialog> createState() => _AddFundsDialogState();
+}
+
+class _AddFundsDialogState extends State<_AddFundsDialog> {
+  final _amountController = TextEditingController();
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      title: const Text(
+        'Add Funds',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+      ),
+      content: TextField(
+        controller: _amountController,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: const TextStyle(color: Colors.white, fontSize: 18),
+        decoration: InputDecoration(
+          prefixText: '\$ ',
+          prefixStyle: const TextStyle(color: Colors.white70, fontSize: 18),
+          hintText: 'Enter amount',
+          hintStyle: const TextStyle(color: AppColors.textTertiary),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.primary),
+          ),
+        ),
+        onSubmitted: (v) => Navigator.of(context).pop(double.tryParse(v.trim())),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+          onPressed: () {
+            final value = double.tryParse(_amountController.text.trim());
+            Navigator.of(context).pop(value);
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    );
   }
 }

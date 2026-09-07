@@ -7,6 +7,7 @@ class AccountDetailsController extends GetxController {
   final AccountRepository _accountRepository = Get.find<AccountRepository>();
 
   final isLoading = true.obs;
+  final errorMessage = RxnString();
   final Rx<AccountModel?> account = Rx<AccountModel?>(null);
 
   @override
@@ -17,8 +18,14 @@ class AccountDetailsController extends GetxController {
 
   Future<void> load() async {
     isLoading.value = true;
-    account.value = await _accountRepository.getActiveAccount();
-    isLoading.value = false;
+    errorMessage.value = null;
+    try {
+      account.value = await _accountRepository.getActiveAccount();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void goToTrade() => Get.offAllNamed(Routes.tradeChart);

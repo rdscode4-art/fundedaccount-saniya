@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../app/theme/app_colors.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/state_views.dart';
 import 'profile_controller.dart';
 
 class ProfileView extends GetView<ProfileController> {
@@ -27,7 +28,16 @@ class ProfileView extends GetView<ProfileController> {
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
       body: SafeArea(
         child: Obx(() {
-          if (controller.isLoading.value || controller.user.value == null) {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.errorMessage.value != null) {
+            return ErrorRetryState(
+              message: controller.errorMessage.value!,
+              onRetry: controller.load,
+            );
+          }
+          if (controller.user.value == null) {
             return const Center(child: CircularProgressIndicator());
           }
           final user = controller.user.value!;
@@ -37,8 +47,14 @@ class ProfileView extends GetView<ProfileController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Profile', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
-                  const Icon(Icons.settings_outlined, color: Colors.white),
+                  const Text(
+                    'Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -48,32 +64,63 @@ class ProfileView extends GetView<ProfileController> {
                     CircleAvatar(
                       radius: 26,
                       backgroundColor: AppColors.primary.withOpacity(0.2),
-                      child: Text(user.name.isNotEmpty ? user.name[0] : '?',
-                          style: const TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.w700)),
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0] : '?',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(user.name,
-                              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text(
+                            user.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text(user.email, style: const TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                          Text(
+                            user.email,
+                            style: const TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 12,
+                            ),
+                          ),
                           if (user.isVerified) ...[
                             const SizedBox(height: 4),
                             const Row(
                               children: [
-                                Icon(Icons.verified_rounded, color: AppColors.success, size: 13),
+                                Icon(
+                                  Icons.verified_rounded,
+                                  color: AppColors.success,
+                                  size: 13,
+                                ),
                                 SizedBox(width: 4),
-                                Text('Verified', style: TextStyle(color: AppColors.success, fontSize: 11)),
+                                Text(
+                                  'Verified',
+                                  style: TextStyle(
+                                    color: AppColors.success,
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textTertiary,
+                    ),
                   ],
                 ),
               ),
@@ -86,15 +133,42 @@ class ProfileView extends GetView<ProfileController> {
                     return Column(
                       children: [
                         ListTile(
-                          leading: Icon(item.icon, color: AppColors.textSecondary, size: 20),
-                          title: Text(item.label, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                          leading: Icon(
+                            item.icon,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          title: Text(
+                            item.label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
                           trailing: item.label == 'KYC Verification'
-                              ? const Text('Verified', style: TextStyle(color: AppColors.success, fontSize: 12))
+                              ? const Text(
+                                  'Verified',
+                                  style: TextStyle(
+                                    color: AppColors.success,
+                                    fontSize: 12,
+                                  ),
+                                )
                               : item.label == 'Two-Factor Authentication'
-                                  ? const Text('On', style: TextStyle(color: AppColors.success, fontSize: 12))
-                                  : const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary, size: 20),
+                              ? const Text(
+                                  'On',
+                                  style: TextStyle(
+                                    color: AppColors.success,
+                                    fontSize: 12,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: AppColors.textTertiary,
+                                  size: 20,
+                                ),
                         ),
-                        if (i != _menuItems.length - 1) const Divider(height: 1, indent: 16, endIndent: 16),
+                        if (i != _menuItems.length - 1)
+                          const Divider(height: 1, indent: 16, endIndent: 16),
                       ],
                     );
                   }),
@@ -104,8 +178,15 @@ class ProfileView extends GetView<ProfileController> {
               AppCard(
                 padding: EdgeInsets.zero,
                 child: ListTile(
-                  leading: const Icon(Icons.logout_rounded, color: AppColors.danger, size: 20),
-                  title: const Text('Logout', style: TextStyle(color: AppColors.danger, fontSize: 14)),
+                  leading: const Icon(
+                    Icons.logout_rounded,
+                    color: AppColors.danger,
+                    size: 20,
+                  ),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(color: AppColors.danger, fontSize: 14),
+                  ),
                   onTap: controller.logout,
                 ),
               ),

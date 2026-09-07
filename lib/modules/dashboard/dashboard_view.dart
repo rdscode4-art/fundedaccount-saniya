@@ -5,6 +5,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/progress_bar.dart';
+import '../../core/widgets/state_views.dart';
 import '../../data/models/position_model.dart';
 import 'dashboard_controller.dart';
 
@@ -18,7 +19,16 @@ class DashboardView extends GetView<DashboardController> {
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       body: SafeArea(
         child: Obx(() {
-          if (controller.isLoading.value || controller.account.value == null) {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.errorMessage.value != null) {
+            return ErrorRetryState(
+              message: controller.errorMessage.value!,
+              onRetry: controller.loadDashboard,
+            );
+          }
+          if (controller.account.value == null) {
             return const Center(child: CircularProgressIndicator());
           }
           final account = controller.account.value!;
@@ -241,9 +251,16 @@ class DashboardView extends GetView<DashboardController> {
                         ],
                       ),
                       const Divider(height: 20),
-                      ...controller.positions.map(
-                        (p) => _PositionRow(position: p),
-                      ),
+                      if (controller.positions.isEmpty)
+                        const EmptyState(
+                          icon: Icons.candlestick_chart_outlined,
+                          title: 'No open positions',
+                          subtitle: 'Trades you open will show up here.',
+                        )
+                      else
+                        ...controller.positions.map(
+                          (p) => _PositionRow(position: p),
+                        ),
                     ],
                   ),
                 ),

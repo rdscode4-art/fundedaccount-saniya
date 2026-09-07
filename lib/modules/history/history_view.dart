@@ -4,6 +4,7 @@ import '../../app/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/state_views.dart';
 import '../../data/models/position_model.dart';
 import 'history_controller.dart';
 
@@ -57,15 +58,34 @@ class HistoryView extends GetView<HistoryController> {
                 if (controller.isLoading.value) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (controller.history.isEmpty) {
-                  return const Center(
-                      child: Text('No records found', style: TextStyle(color: AppColors.textSecondary)));
+                if (controller.errorMessage.value != null) {
+                  return ErrorRetryState(
+                    message: controller.errorMessage.value!,
+                    onRetry: controller.load,
+                  );
                 }
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  itemCount: controller.history.length,
-                  separatorBuilder: (_, __) => const Divider(height: 24),
-                  itemBuilder: (context, i) => _HistoryTile(position: controller.history[i]),
+                if (controller.history.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: controller.load,
+                    child: ListView(
+                      children: const [
+                        EmptyState(
+                          icon: Icons.history_rounded,
+                          title: 'No records found',
+                          subtitle: 'Trades matching this filter will show up here.',
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: controller.load,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    itemCount: controller.history.length,
+                    separatorBuilder: (_, __) => const Divider(height: 24),
+                    itemBuilder: (context, i) => _HistoryTile(position: controller.history[i]),
+                  ),
                 );
               }),
             ),

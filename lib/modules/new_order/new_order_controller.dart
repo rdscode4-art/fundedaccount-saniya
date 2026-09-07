@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../data/models/order_model.dart';
 import '../../data/repositories/trading_repository.dart';
 
@@ -32,6 +33,14 @@ class NewOrderController extends GetxController {
     ((takeProfit.value + delta).clamp(0, 999999)).toDouble(),
   ).toPrecision(5);
 
+  // Direct-entry counterparts to the +/- steppers above, for when someone
+  // wants to type an exact number instead of tapping dozens of times.
+  void setLot(double v) => lotSize.value = _RoundExt(v.clamp(0.01, 100).toDouble()).toPrecision(2);
+  void setRisk(double v) => riskPercent.value = _RoundExt(v.clamp(0.1, 10).toDouble()).toPrecision(2);
+  void setEntry(double v) => entryPrice.value = _RoundExt(v.clamp(0, 999999).toDouble()).toPrecision(5);
+  void setStopLoss(double v) => stopLoss.value = _RoundExt(v.clamp(0, 999999).toDouble()).toPrecision(5);
+  void setTakeProfit(double v) => takeProfit.value = _RoundExt(v.clamp(0, 999999).toDouble()).toPrecision(5);
+
   OrderRequestModel get _request => OrderRequestModel(
     symbol: symbol.value,
     side: side.value,
@@ -50,15 +59,12 @@ class NewOrderController extends GetxController {
     try {
       await _tradingRepository.placeOrder(_request);
       Get.back();
-      Get.snackbar(
+      AppSnackbar.success(
         'Order Placed',
         '${side.value.name.toUpperCase()} order for $symbol submitted',
       );
     } catch (e) {
-      Get.snackbar(
-        'Order Failed',
-        e.toString().replaceFirst('Exception: ', ''),
-      );
+      AppSnackbar.error('Order Failed', e);
     } finally {
       isPlacingOrder.value = false;
     }

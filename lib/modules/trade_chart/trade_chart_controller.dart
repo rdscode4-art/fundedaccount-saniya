@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../app/routes/app_routes.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../data/models/candle_model.dart';
 import '../../data/models/position_model.dart';
 import '../../data/repositories/account_repository.dart';
@@ -12,6 +13,7 @@ class TradeChartController extends GetxController {
   final symbol = 'EUR/USD'.obs;
   final timeframe = '15m'.obs;
   final isLoading = true.obs;
+  final errorMessage = RxnString();
   final candles = <CandleModel>[].obs;
   final positions = <PositionModel>[].obs;
 
@@ -34,13 +36,12 @@ class TradeChartController extends GetxController {
 
   Future<void> loadChart() async {
     isLoading.value = true;
+    errorMessage.value = null;
     try {
       candles.value = await _tradingRepository.getCandles(symbol: symbol.value, timeframe: timeframe.value);
     } catch (e) {
-      Get.snackbar(
-        'Chart',
-        e.toString().replaceFirst('Exception: ', ''),
-      );
+      errorMessage.value = e.toString();
+      AppSnackbar.error('Chart', e);
     } finally {
       isLoading.value = false;
     }
@@ -50,10 +51,7 @@ class TradeChartController extends GetxController {
     try {
       positions.value = await _accountRepository.getOpenPositions();
     } catch (e) {
-      Get.snackbar(
-        'Positions',
-        e.toString().replaceFirst('Exception: ', ''),
-      );
+      AppSnackbar.error('Positions', e);
     }
   }
 
@@ -61,12 +59,9 @@ class TradeChartController extends GetxController {
     try {
       await _tradingRepository.closePosition(positionId);
       await loadPositions();
-      Get.snackbar('Position Closed', 'The position was closed successfully.');
+      AppSnackbar.success('Position Closed', 'The position was closed successfully.');
     } catch (e) {
-      Get.snackbar(
-        'Close Failed',
-        e.toString().replaceFirst('Exception: ', ''),
-      );
+      AppSnackbar.error('Close Failed', e);
     }
   }
 

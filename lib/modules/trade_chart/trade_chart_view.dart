@@ -5,6 +5,7 @@ import '../../app/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_bottom_nav.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/state_views.dart';
 import '../../data/models/candle_model.dart';
 import '../../data/models/position_model.dart';
 import 'trade_chart_controller.dart';
@@ -104,10 +105,15 @@ class TradeChartView extends GetView<TradeChartController> {
                 flex: 5,
                 child: controller.isLoading.value
                     ? const Center(child: CircularProgressIndicator())
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: _CandlestickChart(candles: controller.candles),
-                      ),
+                    : controller.errorMessage.value != null
+                        ? ErrorRetryState(
+                            message: controller.errorMessage.value!,
+                            onRetry: controller.loadChart,
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: _CandlestickChart(candles: controller.candles),
+                          ),
               ),
               Expanded(
                 flex: 4,
@@ -128,17 +134,22 @@ class TradeChartView extends GetView<TradeChartController> {
                         ),
                         const Divider(height: 20),
                         Expanded(
-                          child: ListView.separated(
-                            itemCount: controller.positions.length,
-                            separatorBuilder: (_, __) => const Divider(height: 16),
-                            itemBuilder: (context, i) {
-                              final p = controller.positions[i];
-                              return _PositionTile(
-                                position: p,
-                                onClose: () => controller.closePosition(p.id),
-                              );
-                            },
-                          ),
+                          child: controller.positions.isEmpty
+                              ? const EmptyState(
+                                  icon: Icons.candlestick_chart_outlined,
+                                  title: 'No open positions',
+                                )
+                              : ListView.separated(
+                                  itemCount: controller.positions.length,
+                                  separatorBuilder: (_, __) => const Divider(height: 16),
+                                  itemBuilder: (context, i) {
+                                    final p = controller.positions[i];
+                                    return _PositionTile(
+                                      position: p,
+                                      onClose: () => controller.closePosition(p.id),
+                                    );
+                                  },
+                                ),
                         ),
                       ],
                     ),

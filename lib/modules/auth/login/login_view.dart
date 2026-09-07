@@ -24,45 +24,48 @@ class LoginView extends GetView<LoginController> {
               const Text('Login to your account',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
               const SizedBox(height: 32),
-              const Text('Email or Mobile',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller.emailController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(hintText: 'Enter email or mobile'),
-              ),
-              const SizedBox(height: 18),
-              const Text('Password',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-              const SizedBox(height: 8),
-              Obx(() => TextField(
-                    controller: controller.passwordController,
-                    obscureText: controller.obscurePassword.value,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Enter password',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          controller.obscurePassword.value
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: AppColors.textTertiary,
-                        ),
-                        onPressed: controller.togglePasswordVisibility,
-                      ),
+              Form(
+                key: controller.formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Email or Mobile',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: controller.emailController,
+                      style: const TextStyle(color: Colors.white),
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(hintText: 'Enter email or mobile'),
+                      validator: controller.validateEmailOrMobile,
                     ),
-                  )),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Text('Forgot Password?',
-                      style: TextStyle(color: AppColors.primary, fontSize: 13)),
+                    const SizedBox(height: 18),
+                    const Text('Password',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    Obx(() => TextFormField(
+                          controller: controller.passwordController,
+                          obscureText: controller.obscurePassword.value,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Enter password',
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                controller.obscurePassword.value
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: AppColors.textTertiary,
+                              ),
+                              onPressed: controller.togglePasswordVisibility,
+                            ),
+                          ),
+                          validator: controller.validatePassword,
+                        )),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               Obx(() => ElevatedButton(
                     onPressed: controller.isLoading.value ? null : controller.login,
                     child: controller.isLoading.value
@@ -73,27 +76,6 @@ class LoginView extends GetView<LoginController> {
                           )
                         : const Text('Login'),
                   )),
-              const SizedBox(height: 28),
-              Row(
-                children: const [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('or continue with',
-                        style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-                  ),
-                  Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _socialButton(Icons.g_mobiledata_rounded),
-                  const SizedBox(width: 16),
-                  _socialButton(Icons.apple_rounded),
-                ],
-              ),
               const SizedBox(height: 32),
               Center(
                 child: RichText(
@@ -115,19 +97,6 @@ class LoginView extends GetView<LoginController> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _socialButton(IconData icon) {
-    return Container(
-      width: 56,
-      height: 52,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Icon(icon, color: Colors.white, size: 26),
     );
   }
 }

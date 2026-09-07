@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/routes/app_routes.dart';
 
 class OnboardingStep {
@@ -35,5 +36,11 @@ class OnboardingController extends GetxController {
     ),
   ];
 
-  void getStarted() => Get.toNamed(Routes.login);
+  Future<void> getStarted() async {
+    // So a returning user who logs out later lands on Login next time,
+    // not back through the full onboarding carousel (Splash checks this).
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_onboarding', true);
+    Get.toNamed(Routes.login);
+  }
 }

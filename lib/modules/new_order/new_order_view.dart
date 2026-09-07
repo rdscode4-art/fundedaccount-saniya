@@ -9,6 +9,71 @@ import 'new_order_controller.dart';
 class NewOrderView extends GetView<NewOrderController> {
   const NewOrderView({super.key});
 
+  Future<void> _editValue(
+    BuildContext context, {
+    required String title,
+    required double initial,
+    required int decimals,
+    required void Function(double) onSubmit,
+  }) async {
+    final textController = TextEditingController(
+      text: initial.toStringAsFixed(decimals),
+    );
+    final value = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+          decoration: InputDecoration(
+            hintText: 'Enter $title',
+            hintStyle: const TextStyle(color: AppColors.textTertiary),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+          ),
+          onSubmitted: (v) => Navigator.of(ctx).pop(double.tryParse(v.trim())),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(
+              ctx,
+            ).pop(double.tryParse(textController.text.trim())),
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    );
+    textController.dispose();
+    if (value != null) onSubmit(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,112 +81,190 @@ class NewOrderView extends GetView<NewOrderController> {
       bottomNavigationBar: const AppBottomNav(currentIndex: 2),
       appBar: AppBar(
         leading: const BackButton(color: Colors.white),
-        title: Obx(() => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('New Order', style: TextStyle(color: Colors.white, fontSize: 16)),
-                Text(controller.symbol.value,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-              ],
-            )),
-        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined, color: Colors.white))],
+        title: Obx(
+          () => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'New Order',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              Text(
+                controller.symbol.value,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      body: Obx(() => SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SideButton(
-                        label: 'Buy',
-                        color: AppColors.success,
-                        selected: controller.side.value == OrderSide.buy,
-                        onTap: () => controller.selectSide(OrderSide.buy),
-                      ),
+      body: Obx(
+        () => SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _SideButton(
+                      label: 'Buy',
+                      color: AppColors.success,
+                      selected: controller.side.value == OrderSide.buy,
+                      onTap: () => controller.selectSide(OrderSide.buy),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _SideButton(
-                        label: 'Sell',
-                        color: AppColors.danger,
-                        selected: controller.side.value == OrderSide.sell,
-                        onTap: () => controller.selectSide(OrderSide.sell),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _StepperField(
-                  label: 'Lot Size',
-                  value: controller.lotSize.value.toStringAsFixed(2),
-                  onMinus: () => controller.adjustLot(-0.01),
-                  onPlus: () => controller.adjustLot(0.01),
-                ),
-                _StepperField(
-                  label: 'Risk',
-                  value: '${controller.riskPercent.value.toStringAsFixed(2)}%',
-                  onMinus: () => controller.adjustRisk(-0.1),
-                  onPlus: () => controller.adjustRisk(0.1),
-                ),
-                _StepperField(
-                  label: 'Entry Price',
-                  value: Formatters.price(controller.entryPrice.value),
-                  onMinus: () => controller.adjustEntry(-0.00005),
-                  onPlus: () => controller.adjustEntry(0.00005),
-                ),
-                _StepperField(
-                  label: 'Stop Loss',
-                  value: Formatters.price(controller.stopLoss.value),
-                  onMinus: () => controller.adjustStopLoss(-0.00005),
-                  onPlus: () => controller.adjustStopLoss(0.00005),
-                ),
-                _StepperField(
-                  label: 'Take Profit',
-                  value: Formatters.price(controller.takeProfit.value),
-                  onMinus: () => controller.adjustTakeProfit(-0.00005),
-                  onPlus: () => controller.adjustTakeProfit(0.00005),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Risk / Reward', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                    Text('1:${controller.riskReward.toStringAsFixed(2)}',
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Est. P&L', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                    Text(Formatters.signedCurrency(controller.estimatedPnl),
-                        style: const TextStyle(
-                            color: AppColors.success, fontSize: 14, fontWeight: FontWeight.w700)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          controller.side.value == OrderSide.buy ? AppColors.success : AppColors.danger,
-                    ),
-                    onPressed: controller.isPlacingOrder.value ? null : controller.placeOrder,
-                    child: controller.isPlacingOrder.value
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text('Place ${controller.side.value == OrderSide.buy ? 'Buy' : 'Sell'} Order'),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SideButton(
+                      label: 'Sell',
+                      color: AppColors.danger,
+                      selected: controller.side.value == OrderSide.sell,
+                      onTap: () => controller.selectSide(OrderSide.sell),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _StepperField(
+                label: 'Lot Size',
+                value: controller.lotSize.value.toStringAsFixed(2),
+                onMinus: () => controller.adjustLot(-0.01),
+                onPlus: () => controller.adjustLot(0.01),
+                onTapValue: () => _editValue(
+                  context,
+                  title: 'Lot Size',
+                  initial: controller.lotSize.value,
+                  decimals: 2,
+                  onSubmit: controller.setLot,
                 ),
-              ],
-            ),
-          )),
+              ),
+              _StepperField(
+                label: 'Risk',
+                value: '${controller.riskPercent.value.toStringAsFixed(2)}%',
+                onMinus: () => controller.adjustRisk(-0.1),
+                onPlus: () => controller.adjustRisk(0.1),
+                onTapValue: () => _editValue(
+                  context,
+                  title: 'Risk %',
+                  initial: controller.riskPercent.value,
+                  decimals: 2,
+                  onSubmit: controller.setRisk,
+                ),
+              ),
+              _StepperField(
+                label: 'Entry Price',
+                value: Formatters.price(controller.entryPrice.value),
+                onMinus: () => controller.adjustEntry(-0.00005),
+                onPlus: () => controller.adjustEntry(0.00005),
+                onTapValue: () => _editValue(
+                  context,
+                  title: 'Entry Price',
+                  initial: controller.entryPrice.value,
+                  decimals: 5,
+                  onSubmit: controller.setEntry,
+                ),
+              ),
+              _StepperField(
+                label: 'Stop Loss',
+                value: Formatters.price(controller.stopLoss.value),
+                onMinus: () => controller.adjustStopLoss(-0.00005),
+                onPlus: () => controller.adjustStopLoss(0.00005),
+                onTapValue: () => _editValue(
+                  context,
+                  title: 'Stop Loss',
+                  initial: controller.stopLoss.value,
+                  decimals: 5,
+                  onSubmit: controller.setStopLoss,
+                ),
+              ),
+              _StepperField(
+                label: 'Take Profit',
+                value: Formatters.price(controller.takeProfit.value),
+                onMinus: () => controller.adjustTakeProfit(-0.00005),
+                onPlus: () => controller.adjustTakeProfit(0.00005),
+                onTapValue: () => _editValue(
+                  context,
+                  title: 'Take Profit',
+                  initial: controller.takeProfit.value,
+                  decimals: 5,
+                  onSubmit: controller.setTakeProfit,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Risk / Reward',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    '1:${controller.riskReward.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Est. P&L',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    Formatters.signedCurrency(controller.estimatedPnl),
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: controller.side.value == OrderSide.buy
+                        ? AppColors.success
+                        : AppColors.danger,
+                  ),
+                  onPressed: controller.isPlacingOrder.value
+                      ? null
+                      : controller.placeOrder,
+                  child: controller.isPlacingOrder.value
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          'Place ${controller.side.value == OrderSide.buy ? 'Buy' : 'Sell'} Order',
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -131,7 +274,12 @@ class _SideButton extends StatelessWidget {
   final Color color;
   final bool selected;
   final VoidCallback onTap;
-  const _SideButton({required this.label, required this.color, required this.selected, required this.onTap});
+  const _SideButton({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -145,12 +293,14 @@ class _SideButton extends StatelessWidget {
           color: selected ? color : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Text(label,
-            style: TextStyle(
-              color: selected ? Colors.white : AppColors.textSecondary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            )),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : AppColors.textSecondary,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -161,7 +311,14 @@ class _StepperField extends StatelessWidget {
   final String value;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
-  const _StepperField({required this.label, required this.value, required this.onMinus, required this.onPlus});
+  final VoidCallback? onTapValue;
+  const _StepperField({
+    required this.label,
+    required this.value,
+    required this.onMinus,
+    required this.onPlus,
+    this.onTapValue,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -170,16 +327,35 @@ class _StepperField extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
           Row(
             children: [
               _iconBtn(Icons.remove, onMinus),
-              Container(
-                width: 90,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(value,
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              InkWell(
+                onTap: onTapValue,
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  width: 90,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
               _iconBtn(Icons.add, onPlus),
             ],
@@ -196,7 +372,10 @@ class _StepperField extends StatelessWidget {
       child: Container(
         width: 30,
         height: 30,
-        decoration: BoxDecoration(color: AppColors.surfaceLight, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Icon(icon, color: Colors.white, size: 16),
       ),
     );

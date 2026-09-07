@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../app/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_bottom_nav.dart';
+import '../../core/widgets/state_views.dart';
 import '../../data/models/account_model.dart';
 import 'choose_account_controller.dart';
 
@@ -25,6 +26,12 @@ class ChooseAccountView extends GetView<ChooseAccountController> {
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
+        }
+        if (controller.errorMessage.value != null) {
+          return ErrorRetryState(
+            message: controller.errorMessage.value!,
+            onRetry: controller.loadPlans,
+          );
         }
         return Stack(
           children: [

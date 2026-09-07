@@ -4,6 +4,7 @@ import '../../app/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/progress_bar.dart';
+import '../../core/widgets/state_views.dart';
 import 'account_details_controller.dart';
 
 class AccountDetailsView extends GetView<AccountDetailsController> {
@@ -18,7 +19,16 @@ class AccountDetailsView extends GetView<AccountDetailsController> {
         title: const Text('Account Details', style: TextStyle(color: Colors.white, fontSize: 17)),
       ),
       body: Obx(() {
-        if (controller.isLoading.value || controller.account.value == null) {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (controller.errorMessage.value != null) {
+          return ErrorRetryState(
+            message: controller.errorMessage.value!,
+            onRetry: controller.load,
+          );
+        }
+        if (controller.account.value == null) {
           return const Center(child: CircularProgressIndicator());
         }
         final a = controller.account.value!;
